@@ -1,0 +1,101 @@
+name: Build and release macOS plugin
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            arch: arm64
+          - runner: macos-15-intel
+            arch: amd64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Check release version
+        env:
+          RELEASE_TAG: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
+        run: |
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          tag = os.environ['RELEASE_TAG']
+          if tag:
+              assert tag == 'v' + Path('VERSION').read_text().strip(), 'Tag and VERSION disagree'
+          PY
+      - name: Test lifecycle and developer tools
+        run: python3 -m unittest discover -s tests -p 'test_*.py' -v
+      - name: Build portable store package
+        run: python3 scripts/build_release.py --arch '${{ matrix.arch }}'
+      - name: Test embedded native helper
+        run: '"build/${{ matrix.arch }}/Codex Quota Menubar.app/Contents/MacOS/QuotaMenubar" --self-test'
+      - name: Verify release package
+        run: python3 scripts/verify_release.py dist
+      - name: Verify real CPA store installation and lifecycle
+        env:
+          TEST_ARCH: ${{ matrix.arch }}
+        run: |
+          python3 - <<'PY'
+          import hashlib, os, tarfile, urllib.request
+          from pathlib import Path
+          arch = os.environ['TEST_ARCH']
+          platform = 'aarch64' if arch == 'arm64' else 'amd64'
+          expected = {'arm64': 'd9bf58db6e07d0f587a248abc4a1099178fbec1d659d874c961d8caf3495a09e',
+                      'amd64': '8ca6317fe7560a0452d2835f296a6360de8bc88099670c68635fd1cf4132c8d5'}[arch]
+          root = Path('build/test-core')
+          root.mkdir(parents=True, exist_ok=True)
+          archive = root / 'core.tar.gz'
+          urllib.request.urlretrieve(f'https://github.com/router-for-me/CLIProxyAPI/releases/download/v8.0.27/CLIProxyAPI_8.0.27_darwin_{platform}.tar.gz', archive)
+          assert hashlib.sha256(archive.read_bytes()).hexdigest() == expected
+          with tarfile.open(archive) as package:
+              member = package.getmember('cli-proxy-api')
+              assert member.isfile()
+              executable = root / 'cli-proxy-api'
+              executable.write_bytes(package.extractfile(member).read())
+              executable.chmod(0o755)
+          PY
+          python3 scripts/cpa_smoke.py --core build/test-core/cli-proxy-api --artifact "dist/codex-quota-menubar_$(cat VERSION)_darwin_${TEST_ARCH}.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: darwin-${{ matrix.arch }}
+          path: |
+            dist/*.zip
+            dist/build-*.json
+          if-no-files-found: error
+
+  release:
+    if: github.ref_type == 'tag'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: darwin-*
+          path: dist
+          merge-multiple: true
+      - name: Generate checksums and publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          (cd dist && sha256sum *.zip > checksums.txt)
+          python3 scripts/verify_release.py dist --complete
+          gh release create "$RELEASE_TAG" dist/*.zip dist/checksums.txt dist/build-*.json --verify-tag --title "Codex Quota Menubar $RELEASE_TAG" --notes-file RELEASE_NOTES.md
