@@ -15,7 +15,7 @@ The preview uses sample data and contains no real account.
 3. Enable CPA's global plugin switch.
 4. Find **Codex Quota Menubar** in the plugin store, complete CPA's source confirmation, and click Install. The menu bar capsule starts automatically when the plugin is enabled.
 
-While the official-store submission is awaiting inclusion, add this URL under **Plugins → Settings → Additional store sources**:
+The official-store submission is [PR #244](https://github.com/router-for-me/CLIProxyAPI-Plugins-Store/pull/244), pending maintainer acceptance. Until it is included, add this URL under **Plugins → Settings → Additional store sources**:
 
 ```text
 https://raw.githubusercontent.com/RoyalXC/cpa-plugin-codex-quota-menubar/main/registry.json
@@ -36,7 +36,7 @@ Shareable Chinese installation guide: [安装流程与菜单栏使用](docs/INST
 - Select an account or use automatic identification based on CPA's latest eligible Codex OAuth request. This selection affects quota display only; it does not change CPA routing.
 - Click the refresh icon to query again. CPA usage events also trigger debounced refreshes. Requests that bypass CPA do not create these events.
 - `--%` means the account or quota is unknown; `*` indicates an expired cached result.
-- Right-click (or Control-click) the capsule and choose **Quit**. The widget stays stopped until you disable and re-enable or reconfigure the plugin.
+- Right-click (or Control-click) the capsule and choose **Quit**. Disable and re-enable the plugin to resume it.
 
 The widget does not represent third-party API-key model quotas. After third-party requests, it may retain the last eligible Codex OAuth account's quota and labels that source. Account credentials must be renewed in CPA when expired; the widget does not refresh OAuth tokens.
 
@@ -91,15 +91,17 @@ The helper is signed and optionally notarized/stapled **before** embedding; it i
 
 ## Validation
 
-On October 13, 2026, macOS 27.0.1 (Apple Silicon), the 25 Python tests passed. Each architecture's native helper passed 227 self-test checks. Real CLIProxyAPI 8.0.27 cores passed isolated store download/install, registration, status-item readiness, disable/re-enable, and process-exit checks for arm64 and amd64 (Rosetta). The lifecycle tests used a local fixture registry. An additional arm64 check read existing CPA accounts without copying or changing credentials and confirmed real quota availability.
+On October 13, 2026, the [v0.5.0 release CI](https://github.com/RoyalXC/cpa-plugin-codex-quota-menubar/actions/runs/38375323674) passed on native macOS 15 Apple Silicon and Intel runners using SDK 15.5: 25 Python tests, 227 native helper self-test checks per architecture, package validation, and real CLIProxyAPI 8.0.27 store/lifecycle checks with an isolated fixture registry. The [source-publication CI](https://github.com/RoyalXC/cpa-plugin-codex-quota-menubar/actions/runs/38377559307) repeated both architecture builds with 30 Python tests, including source-update and downgrade-protection checks.
 
-GitHub Actions separately builds and repeats the store/lifecycle checks on native macOS 15 Apple Silicon and Intel runners. Public-release installation and real-account checks are recorded after publication. Older systems beyond these validation environments still require testing.
+On macOS 27.0.1 (Apple Silicon), both actual published packages passed installation through the public HTTPS additional source using CLIProxyAPI 8.0.27: download/checksum verification, registration, status-item readiness, disable/re-enable, and helper exit on core shutdown for arm64 and amd64/Rosetta. An arm64 check read existing CPA accounts without copying or changing credentials and confirmed real quota availability.
+
+The existing CPA 0.3.34 installation was then upgraded from local plugin 0.4.0 through that public source. Version 0.5.0 registered and launched an owned `cpa-managed` helper; its first real quota request succeeded with `quotaAvailable=true`, `loading=false`, and `stale=false`. The old independent widget stopped. Status-item readiness was verified from native application state; the computer-use interface could not inspect the menu bar app, so these checks do not claim a GUI Install-button click or a captured real-account popover. Older systems beyond these validation environments still require testing.
 
 ## Release and official store
 
 `VERSION` must match a `v<version>` tag. GitHub Actions builds and tests native Apple Silicon and Intel packages, generates `checksums.txt`, and publishes the tagged release. Store archives contain only `codex-quota-menubar.dylib` at their root, with the complete native application carried inside that library.
 
-The [official store](https://github.com/router-for-me/CLIProxyAPI-Plugins-Store) requires a registry pull request and maintainer acceptance. Publishing a GitHub release does not itself add the plugin to the official store. The canonical official entry is in `store-entry.json` and follows GitHub releases. The additional source uses a direct-install registry and preserves published version history; old tag reruns cannot downgrade its current version. Switching an existing installation from the additional source to the official source requires uninstalling it and reinstalling from the official source; private widget settings are retained.
+The [official store](https://github.com/router-for-me/CLIProxyAPI-Plugins-Store) requires a registry pull request and maintainer acceptance. [PR #244](https://github.com/router-for-me/CLIProxyAPI-Plugins-Store/pull/244) submits this plugin; it is not included until that PR is merged. The canonical official entry is in `store-entry.json` and follows GitHub releases. The additional source uses a direct-install registry and preserves published version history; old tag reruns cannot downgrade its current version. Switching an existing installation from the additional source to the official source requires uninstalling it and reinstalling from the official source; private widget settings are retained.
 
 ## 中文安装说明
 
