@@ -17,7 +17,7 @@
 
 附加来源直接下载 GitHub 发布页的安装包并核对校验值，不依赖 GitHub API 查询。后续更新继续使用同一来源。官方商店收录后，如要切换到官方来源，请先卸载插件再从官方商店安装；组件的本地设置会保留。
 
-当前版本为 [0.5.0](https://github.com/RoyalXC/cpa-plugin-codex-quota-menubar/releases/tag/v0.5.0)，官方商店收录申请为 [PR #244](https://github.com/router-for-me/CLIProxyAPI-Plugins-Store/pull/244)，待维护者合并。已通过原生 Apple Silicon、Intel 的 macOS 15 CI，以及 macOS 27.0.1 上的公开来源安装与本机 CPA 升级验证。安装包目前使用临时签名，尚未做 Apple 公证；macOS 13 为编译目标，尚未完成实机验证。
+当前版本为 [0.5.0](https://github.com/RoyalXC/cpa-plugin-codex-quota-menubar/releases/tag/v0.5.0)，官方商店收录申请为 [PR #245](https://github.com/router-for-me/CLIProxyAPI-Plugins-Store/pull/245)，待维护者合并。已通过原生 Apple Silicon、Intel 的 macOS 15 CI，以及 macOS 27.0.1 上的公开来源安装与本机 CPA 升级验证。安装包目前使用临时签名，尚未做 Apple 公证；macOS 13 为编译目标，尚未完成实机验证。
 
 | 操作或显示 | 含义 |
 | --- | --- |

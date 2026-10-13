@@ -15,7 +15,7 @@ The preview uses sample data and contains no real account.
 3. Enable CPA's global plugin switch.
 4. Find **Codex Quota Menubar** in the plugin store, complete CPA's source confirmation, and click Install. The menu bar capsule starts automatically when the plugin is enabled.
 
-The official-store submission is [PR #244](https://github.com/router-for-me/CLIProxyAPI-Plugins-Store/pull/244), pending maintainer acceptance. Until it is included, add this URL under **Plugins → Settings → Additional store sources**:
+The official-store submission is [PR #245](https://github.com/router-for-me/CLIProxyAPI-Plugins-Store/pull/245), pending maintainer acceptance. Until it is included, add this URL under **Plugins → Settings → Additional store sources**:
 
 ```text
 https://raw.githubusercontent.com/RoyalXC/cpa-plugin-codex-quota-menubar/main/registry.json
@@ -101,7 +101,7 @@ The existing CPA 0.3.34 installation was then upgraded from local plugin 0.4.0 t
 
 `VERSION` must match a `v<version>` tag. GitHub Actions builds and tests native Apple Silicon and Intel packages, generates `checksums.txt`, and publishes the tagged release. Store archives contain only `codex-quota-menubar.dylib` at their root, with the complete native application carried inside that library.
 
-The [official store](https://github.com/router-for-me/CLIProxyAPI-Plugins-Store) requires a registry pull request and maintainer acceptance. [PR #244](https://github.com/router-for-me/CLIProxyAPI-Plugins-Store/pull/244) submits this plugin; it is not included until that PR is merged. The canonical official entry is in `store-entry.json` and follows GitHub releases. The additional source uses a direct-install registry and preserves published version history; old tag reruns cannot downgrade its current version. Switching an existing installation from the additional source to the official source requires uninstalling it and reinstalling from the official source; private widget settings are retained.
+The [official store](https://github.com/router-for-me/CLIProxyAPI-Plugins-Store) requires a registry pull request and maintainer acceptance. [PR #245](https://github.com/router-for-me/CLIProxyAPI-Plugins-Store/pull/245) submits this plugin; it is not included until that PR is merged. The canonical official entry is in `store-entry.json` and follows GitHub releases. The additional source uses a direct-install registry and preserves published version history; old tag reruns cannot downgrade its current version. Switching an existing installation from the additional source to the official source requires uninstalling it and reinstalling from the official source; private widget settings are retained.
 
 ## 中文安装说明
 
