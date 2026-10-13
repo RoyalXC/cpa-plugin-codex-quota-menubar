@@ -140,6 +140,7 @@ def smoke(core, artifact=None, registry_url=None, cpa_home=None):
                       'coreSHA256': hashlib.sha256(Path(core).read_bytes()).hexdigest(),
                       'installType': installed.get('install_type'),
                       'installedFile': Path(entry['path']).name}
+            assert helper_process(resumed['pid'], plugin_home), 'Resumed helper exited before core shutdown'
             process.terminate()
             process.wait(timeout=10)
             wait_for(lambda: not helper_process(resumed['pid'], plugin_home))

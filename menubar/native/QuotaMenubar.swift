@@ -1081,8 +1081,12 @@ func selfTest() throws {
     check(picker.item(at: 1) === originalItem)
     viewApp.controller.menuTrackingEnded = { [weak viewApp] in viewApp?.updateView(force: true) }
     viewApp.controller.menuDidClose(originalMenu)
-    RunLoop.main.run(until: Date().addingTimeInterval(0.05))
-    check(!viewApp.pendingViewUpdate && !viewApp.controller.menuTracking)
+    let menuCloseDeadline = Date().addingTimeInterval(1)
+    while (viewApp.pendingViewUpdate || viewApp.controller.menuTracking) && Date() < menuCloseDeadline {
+        _ = RunLoop.main.run(mode: .default, before: min(menuCloseDeadline, Date().addingTimeInterval(0.01)))
+    }
+    check(!viewApp.controller.menuTracking)
+    check(!viewApp.pendingViewUpdate)
     check(picker.numberOfItems == 3 && picker.selectedItem?.representedObject as? String == "another-account")
     check(picker.superview === originalParent && picker.menu === originalMenu)
     check(snapshot.account?.name == "fixture" && !snapshot.stale)

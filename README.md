@@ -2,7 +2,11 @@
 
 A native macOS menu bar widget for [EasyCLIProxyAPI (CPA)](https://github.com/router-for-me/EasyCLIProxyAPI). It shows **remaining Codex five-hour and weekly quotas**, account selection, and reset times. The native application is embedded in the plugin, so users need no Python, Node, Xcode, administrator password, or separate helper download.
 
-![Application icon](menubar/assets/QuotaMenubar.png)
+<img src="menubar/assets/QuotaMenubar.png" width="128" alt="Application icon">
+
+![Menu bar detail preview with fixture data](docs/preview.png)
+
+The preview uses sample data and contains no real account.
 
 ## Install from CPA
 
@@ -85,7 +89,7 @@ The helper is signed and optionally notarized/stapled **before** embedding; it i
 
 ## Validation
 
-On October 13, 2026, macOS 27.0.1 (Apple Silicon), the 25 Python tests passed. Each architecture's native helper passed 226 self-test checks. Real CLIProxyAPI 8.0.27 cores passed isolated store download/install, registration, status-item readiness, disable/re-enable, and process-exit checks for arm64 and amd64 (Rosetta). These tests used a local fixture registry and no real accounts.
+On October 13, 2026, macOS 27.0.1 (Apple Silicon), the 25 Python tests passed. Each architecture's native helper passed 227 self-test checks. Real CLIProxyAPI 8.0.27 cores passed isolated store download/install, registration, status-item readiness, disable/re-enable, and process-exit checks for arm64 and amd64 (Rosetta). The lifecycle tests used a local fixture registry. An additional arm64 check read existing CPA accounts without copying or changing credentials and confirmed real quota availability.
 
 GitHub Actions separately builds and repeats the store/lifecycle checks on native macOS 15 Apple Silicon and Intel runners. Public-release installation and real-account checks are recorded after publication. Older systems beyond these validation environments still require testing.
 
