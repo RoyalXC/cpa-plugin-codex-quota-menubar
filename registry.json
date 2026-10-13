@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "plugins": [
     {
       "id": "codex-quota-menubar",
@@ -10,7 +10,56 @@
       "logo": "https://raw.githubusercontent.com/RoyalXC/cpa-plugin-codex-quota-menubar/main/menubar/assets/QuotaMenubar.png",
       "homepage": "https://github.com/RoyalXC/cpa-plugin-codex-quota-menubar",
       "license": "MIT",
-      "tags": ["Codex", "Quota", "macOS", "Menu Bar"]
+      "tags": [
+        "Codex",
+        "Quota",
+        "macOS",
+        "Menu Bar"
+      ],
+      "version": "0.5.0",
+      "install": {
+        "type": "direct",
+        "artifacts": [
+          {
+            "goos": "darwin",
+            "goarch": "arm64",
+            "url": "https://github.com/RoyalXC/cpa-plugin-codex-quota-menubar/releases/download/v0.5.0/codex-quota-menubar_0.5.0_darwin_arm64.zip",
+            "sha256": "d4ab3f8c64b5ce5db7da29e792b88a95272ec5cb621afc495f656f525502891d",
+            "size": 1997300
+          },
+          {
+            "goos": "darwin",
+            "goarch": "amd64",
+            "url": "https://github.com/RoyalXC/cpa-plugin-codex-quota-menubar/releases/download/v0.5.0/codex-quota-menubar_0.5.0_darwin_amd64.zip",
+            "sha256": "47ddde5055c7440cda1374fd1dbe2911e2addc50661e62bb02189f2daf55f7e3",
+            "size": 2014262
+          }
+        ]
+      },
+      "versions": [
+        {
+          "version": "0.5.0",
+          "install": {
+            "type": "direct",
+            "artifacts": [
+              {
+                "goos": "darwin",
+                "goarch": "arm64",
+                "url": "https://github.com/RoyalXC/cpa-plugin-codex-quota-menubar/releases/download/v0.5.0/codex-quota-menubar_0.5.0_darwin_arm64.zip",
+                "sha256": "d4ab3f8c64b5ce5db7da29e792b88a95272ec5cb621afc495f656f525502891d",
+                "size": 1997300
+              },
+              {
+                "goos": "darwin",
+                "goarch": "amd64",
+                "url": "https://github.com/RoyalXC/cpa-plugin-codex-quota-menubar/releases/download/v0.5.0/codex-quota-menubar_0.5.0_darwin_amd64.zip",
+                "sha256": "47ddde5055c7440cda1374fd1dbe2911e2addc50661e62bb02189f2daf55f7e3",
+                "size": 2014262
+              }
+            ]
+          }
+        }
+      ]
     }
   ]
 }

@@ -21,6 +21,8 @@ While the official-store submission is awaiting inclusion, add this URL under **
 https://raw.githubusercontent.com/RoyalXC/cpa-plugin-codex-quota-menubar/main/registry.json
 ```
 
+This additional source pins published HTTPS package URLs, SHA-256 checksums, and sizes. It does not need GitHub release API requests. Future releases update the same source automatically after both architecture packages have passed verification.
+
 The supported platform is macOS. Each release provides separate `darwin_arm64` and `darwin_amd64` packages; CPA selects the package matching the **core process architecture**, including Intel CPA running through Rosetta on Apple Silicon.
 
 Builds target macOS 13+. Runtime validation results are documented below; a deployment target alone does not establish compatibility with every older macOS release. Initial builds are ad-hoc signed and **not Apple-notarized**. Build metadata records the exact signing status. Developer ID signing and notarization are supported by the build script when the maintainer provides the corresponding credentials.
@@ -97,7 +99,7 @@ GitHub Actions separately builds and repeats the store/lifecycle checks on nativ
 
 `VERSION` must match a `v<version>` tag. GitHub Actions builds and tests native Apple Silicon and Intel packages, generates `checksums.txt`, and publishes the tagged release. Store archives contain only `codex-quota-menubar.dylib` at their root, with the complete native application carried inside that library.
 
-The [official store](https://github.com/router-for-me/CLIProxyAPI-Plugins-Store) requires a registry pull request and maintainer acceptance. Publishing a GitHub release does not itself add the plugin to the official store. Once listed, new releases supply updates without changing the registry entry.
+The [official store](https://github.com/router-for-me/CLIProxyAPI-Plugins-Store) requires a registry pull request and maintainer acceptance. Publishing a GitHub release does not itself add the plugin to the official store. The canonical official entry is in `store-entry.json` and follows GitHub releases. The additional source uses a direct-install registry and preserves published version history; old tag reruns cannot downgrade its current version. Switching an existing installation from the additional source to the official source requires uninstalling it and reinstalling from the official source; private widget settings are retained.
 
 ## 中文安装说明
 

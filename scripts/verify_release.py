@@ -9,12 +9,14 @@ import sys
 import zipfile
 
 
-def verify(directory, complete=False):
+def verify(directory, complete=False, version=None):
     directory = Path(directory)
     packages = sorted(directory.glob('*.zip'))
     if not packages:
         raise ValueError('No release archives')
-    version = (Path(__file__).resolve().parents[1] / 'VERSION').read_text().strip()
+    version = version or (Path(__file__).resolve().parents[1] / 'VERSION').read_text().strip()
+    if not re.fullmatch(r'\d+\.\d+\.\d+', version):
+        raise ValueError('Release version must contain three numeric components')
     expected = {f'codex-quota-menubar_{version}_darwin_{arch}.zip' for arch in ('arm64', 'amd64')}
     if complete and {package.name for package in packages} != expected:
         raise ValueError('Release requires exactly the current arm64 and amd64 packages')

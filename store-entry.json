@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "plugins": [
+    {
+      "id": "codex-quota-menubar",
+      "name": "Codex Quota Menubar",
+      "description": "Native macOS menu bar widget showing remaining Codex five-hour and weekly quotas. Includes its native helper; no Python or Xcode installation is required.",
+      "author": "RoyalXC",
+      "repository": "https://github.com/RoyalXC/cpa-plugin-codex-quota-menubar",
+      "logo": "https://raw.githubusercontent.com/RoyalXC/cpa-plugin-codex-quota-menubar/main/menubar/assets/QuotaMenubar.png",
+      "homepage": "https://github.com/RoyalXC/cpa-plugin-codex-quota-menubar",
+      "license": "MIT",
+      "tags": ["Codex", "Quota", "macOS", "Menu Bar"]
+    }
+  ]
+}

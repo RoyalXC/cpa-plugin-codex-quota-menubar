@@ -99,3 +99,17 @@ jobs:
           (cd dist && sha256sum *.zip > checksums.txt)
           python3 scripts/verify_release.py dist --complete
           gh release create "$RELEASE_TAG" dist/*.zip dist/checksums.txt dist/build-*.json --verify-tag --title "Codex Quota Menubar $RELEASE_TAG" --notes-file RELEASE_NOTES.md
+      - name: Update additional store source
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          git fetch origin main
+          git checkout -B main origin/main
+          python3 scripts/update_registry.py dist --version "${RELEASE_TAG#v}"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add registry.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Update packaged CPA store source [skip ci]"
+            git push origin main
+          fi
