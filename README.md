@@ -13,9 +13,10 @@ The preview uses sample data and contains no real account.
 1. Use a current CPA release with a plugin-capable CLIProxyAPI core, and start the core.
 2. Add or authorize a valid **Codex OAuth** account in CPA.
 3. Enable CPA's global plugin switch.
-4. Find **Codex Quota Menubar** in the plugin store, complete CPA's source confirmation, and click Install. The menu bar capsule starts automatically when the plugin is enabled.
+4. Add the project registry URL below under **Plugins → Settings → Additional store sources**.
+5. Find **Codex Quota Menubar** in the plugin store, complete CPA's source confirmation, and click Install. The menu bar capsule starts automatically when the plugin is enabled.
 
-The official-store submission is [PR #245](https://github.com/router-for-me/CLIProxyAPI-Plugins-Store/pull/245), pending maintainer acceptance. Until it is included, add this URL under **Plugins → Settings → Additional store sources**:
+This macOS-only plugin is distributed through the project's third-party CPA store source. Official-store publication is no longer planned. Use this source for installation and updates:
 
 ```text
 https://raw.githubusercontent.com/RoyalXC/cpa-plugin-codex-quota-menubar/main/registry.json
@@ -97,17 +98,19 @@ On macOS 27.0.1 (Apple Silicon), both actual published packages passed installat
 
 The existing CPA 0.3.34 installation was then upgraded from local plugin 0.4.0 through that public source. Version 0.5.0 registered and launched an owned `cpa-managed` helper; its first real quota request succeeded with `quotaAvailable=true`, `loading=false`, and `stale=false`. The old independent widget stopped. Status-item readiness was verified from native application state; the computer-use interface could not inspect the menu bar app, so these checks do not claim a GUI Install-button click or a captured real-account popover. Older systems beyond these validation environments still require testing.
 
-## Release and official store
+## Release and third-party store source
 
 `VERSION` must match a `v<version>` tag. GitHub Actions builds and tests native Apple Silicon and Intel packages, generates `checksums.txt`, and publishes the tagged release. Store archives contain only `codex-quota-menubar.dylib` at their root, with the complete native application carried inside that library.
 
-The [official store](https://github.com/router-for-me/CLIProxyAPI-Plugins-Store) requires a registry pull request and maintainer acceptance. [PR #245](https://github.com/router-for-me/CLIProxyAPI-Plugins-Store/pull/245) submits this plugin; it is not included until that PR is merged. The canonical official entry is in `store-entry.json` and follows GitHub releases. The additional source uses a direct-install registry and preserves published version history; old tag reruns cannot downgrade its current version. Switching an existing installation from the additional source to the official source requires uninstalling it and reinstalling from the official source; private widget settings are retained.
+The project's `registry.json` is the third-party CPA store source for this macOS-only plugin. Its direct-install entries pin published package URLs, checksums, and sizes, and preserve published version history; old tag reruns cannot downgrade its current version. `store-entry.json` supplies shared plugin metadata to the source generator. Future tagged releases automatically update this same source after both macOS architecture packages pass verification. Users can keep the source configured in CPA to install and update the plugin.
+
+The official-store submission has been closed, and official-store publication is no longer planned. Distribution continues through this repository's third-party source.
 
 ## 中文安装说明
 
-在 CPA 中授权 Codex OAuth 账号，启动支持插件的内核并开启插件总开关。在插件商店找到 **Codex Quota Menubar**，完成 CPA 自带的来源确认后安装；启用插件后菜单栏自动出现额度胶囊。用户无需安装 Python 或 Xcode。
+本组件仅支持 macOS，通过本项目的第三方 CPA 商店来源分发，不提交 CPA 官方插件商店。在 CPA 中授权 Codex OAuth 账号，启动支持插件的内核并开启插件总开关，再在“插件 → 设置 → 附加商店来源”加入上面的 `registry.json` 地址。在插件商店找到 **Codex Quota Menubar**，完成 CPA 自带的来源确认后安装；启用插件后菜单栏自动出现额度胶囊。用户无需安装 Python 或 Xcode。
 
-官方商店收录前，可在“插件 → 设置 → 附加商店来源”加入上面的 `registry.json` 地址。菜单栏数字表示剩余额度，点击可查看 5 小时、周额度及重置时间；下拉框只选择展示账号，刷新图标手动更新，右键“退出”可停止组件。重新禁用/启用插件可恢复。
+安装和后续更新均使用同一个附加来源。菜单栏数字表示剩余额度，点击可查看 5 小时、周额度及重置时间；下拉框只选择展示账号，刷新图标手动更新，右键“退出”可停止组件。重新禁用/启用插件可恢复。
 
 ## License
 

@@ -1,5 +1,13 @@
 Codex Quota Menubar is a native macOS menu bar plugin for CPA.
 
+Install and update through this project's third-party CPA store source. Add the following URL under **Plugins → Settings → Additional store sources**:
+
+```text
+https://raw.githubusercontent.com/RoyalXC/cpa-plugin-codex-quota-menubar/main/registry.json
+```
+
+The plugin is macOS-only and is distributed exclusively through this third-party store source. Official-store publication is no longer planned.
+
 - Shows remaining five-hour and weekly Codex quotas when provided by the account, including reset times.
 - Bundles the precompiled menu bar application inside the plugin; installation needs no Python, Node, Xcode, administrator access, or additional helper download.
 - Supports Apple Silicon and Intel CPA core processes, account selection, manual refresh, and CPA usage event updates.
