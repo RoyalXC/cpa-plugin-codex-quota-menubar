@@ -52,6 +52,7 @@ static BOOL reconnectStarted = NO, stopping = NO, suspended = NO;
 static int eventSocket = -1;
 static pid_t helperPID = -1;
 static atomic_int pendingUsage = 0;
+static atomic_bool allowUnauthenticatedRequests = false;
 static NSString *dataDirectory = nil, *cpaHome = nil, *authDirectory = nil;
 static NSInteger managementPort = 0;
 static NSString *lastError = nil;
@@ -429,7 +430,7 @@ static BOOL parseYAMLConfig(NSData *yaml, NSDictionary **out) {
     if (yaml.length > 65536) { lastError = @"Plugin config exceeds 64 KiB"; return NO; }
     NSString *text = [[NSString alloc] initWithData:yaml encoding:NSUTF8StringEncoding];
     if (!text) { lastError = @"Plugin config is not UTF-8 YAML"; return NO; }
-    NSSet *allowed = [NSSet setWithArray:@[@"dataDir", @"cpaHome", @"authDir", @"managementPort"]];
+    NSSet *allowed = [NSSet setWithArray:@[@"dataDir", @"cpaHome", @"authDir", @"managementPort", @"allowUnauthenticatedRequests"]];
     BOOL skipStoreSubtree = NO;
     for (NSString *raw in [text componentsSeparatedByCharactersInSet:NSCharacterSet.newlineCharacterSet]) {
         NSUInteger indent = 0;
@@ -448,6 +449,7 @@ static BOOL parseYAMLConfig(NSData *yaml, NSDictionary **out) {
         if ([key isEqualToString:@"store"]) { skipStoreSubtree = value.length == 0; continue; }
         if (![allowed containsObject:key]) { lastError = [NSString stringWithFormat:@"Unknown plugin config field: %@", key]; return NO; }
         if (config[key]) { lastError = [NSString stringWithFormat:@"Duplicate plugin config field: %@", key]; return NO; }
+        BOOL quoted = [value hasPrefix:@"\""] || [value hasPrefix:@"'"];
         if ([value hasPrefix:@"\""]) {
             if (value.length < 2 || ![value hasSuffix:@"\""]) { lastError = @"Invalid quoted plugin config scalar"; return NO; }
             value = [value substringWithRange:NSMakeRange(1, value.length - 2)];
@@ -459,7 +461,13 @@ static BOOL parseYAMLConfig(NSData *yaml, NSDictionary **out) {
         } else {
             NSRange comment = [value rangeOfString:@" #"]; if (comment.location != NSNotFound) value = [[value substringToIndex:comment.location] stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceCharacterSet];
         }
-        if ([key isEqualToString:@"managementPort"]) {
+        if ([key isEqualToString:@"allowUnauthenticatedRequests"]) {
+            NSString *boolean = value.lowercaseString;
+            if (quoted || (![boolean isEqualToString:@"true"] && ![boolean isEqualToString:@"false"])) {
+                lastError = @"allowUnauthenticatedRequests must be a boolean (true or false)"; return NO;
+            }
+            config[key] = @([boolean isEqualToString:@"true"]);
+        } else if ([key isEqualToString:@"managementPort"]) {
             NSScanner *scanner = [NSScanner scannerWithString:value]; NSInteger port = 0;
             if (![scanner scanInteger:&port] || !scanner.isAtEnd || port < 1 || port > 65535) { lastError = @"managementPort must be an integer between 1 and 65535"; return NO; }
             config[key] = @(port);
@@ -501,6 +509,8 @@ static BOOL persistSettings(NSDictionary *config) {
 }
 
 static BOOL applyConfiguration(uint8_t *request, size_t length) {
+    // Do not leave bypass enabled during a failed or partially applied configuration.
+    atomic_store(&allowUnauthenticatedRequests, false);
     if (!request || length == 0 || length > MAX_REQUEST_BYTES) { lastError = @"Invalid lifecycle request"; return NO; }
     NSData *bytes = [NSData dataWithBytes:request length:length]; NSDictionary *body = [NSJSONSerialization JSONObjectWithData:bytes options:0 error:nil];
     if (![body isKindOfClass:[NSDictionary class]]) { lastError = @"Lifecycle request must be a JSON object"; return NO; }
@@ -531,10 +541,11 @@ static BOOL applyConfiguration(uint8_t *request, size_t length) {
         if (ready) { if (pthread_create(&reconnectThread, NULL, reconnectHelper, NULL) != 0) { ready = NO; lastError = @"Could not start helper reconnect thread"; } else reconnectStarted = YES; }
     }
     pthread_cond_broadcast(&lifecycleChanged); pthread_mutex_unlock(&lifecycleLock);
+    if (ready) atomic_store(&allowUnauthenticatedRequests, [config[@"allowUnauthenticatedRequests"] boolValue]);
     return ready;
 }
 
-static void quiescePlugin(void) { stopThreadAndHelper(YES); }
+static void quiescePlugin(void) { atomic_store(&allowUnauthenticatedRequests, false); stopThreadAndHelper(YES); }
 static void shutdownPlugin(void) { quiescePlugin(); }
 static void freeResponse(void *pointer, size_t length) { free(pointer); }
 
@@ -551,8 +562,17 @@ static int callPlugin(char *method, uint8_t *request, size_t requestLength, clip
                         @{@"Name": @"dataDir", @"Type": @"string", @"Description": @"Absolute plugin data directory"},
                         @{@"Name": @"cpaHome", @"Type": @"string", @"Description": @"Absolute CPA home directory"},
                         @{@"Name": @"authDir", @"Type": @"string", @"Description": @"Optional absolute auth directory"},
-                        @{@"Name": @"managementPort", @"Type": @"integer", @"Description": @"CPA management port"} ]},
-                @"capabilities": @{@"usage_plugin": @YES}};
+                        @{@"Name": @"managementPort", @"Type": @"integer", @"Description": @"CPA management port"},
+                        @{@"Name": @"allowUnauthenticatedRequests", @"Type": @"boolean", @"Default": @NO,
+                            @"Description": @"Allow all proxy API requests without checking credentials (local CPA use only). Default: false."} ]},
+                @"capabilities": @{@"usage_plugin": @YES, @"frontend_auth_provider": @(atomic_load(&allowUnauthenticatedRequests))}};
+        } else if ([name isEqualToString:@"frontend_auth.identifier"]) {
+            result = @{@"identifier": @"allow-all"};
+        } else if ([name isEqualToString:@"frontend_auth.authenticate"]) {
+            // No credential parsing or validation: this is an explicit, opt-in bypass.
+            BOOL enabled = atomic_load(&allowUnauthenticatedRequests);
+            result = enabled ? @{@"Authenticated": @YES, @"Principal": @"codex-quota-menubar:allow-all"} :
+                @{@"Authenticated": @NO};
         } else if ([name isEqualToString:@"plugin.quiesce"]) {
             quiescePlugin();
         } else if ([name isEqualToString:@"plugin.shutdown"]) {

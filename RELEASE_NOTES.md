@@ -1,5 +1,7 @@
 Codex Quota Menubar is a native macOS menu bar plugin for CPA.
 
+0.6.0 adds `allowUnauthenticatedRequests` (boolean, default `false`). Enable it in plugin configuration to accept all proxy API requests without checking credentials, including Codex OAuth tokens, for a CPA instance bound to localhost. Management API authentication remains separate. Turning the option off or disabling the plugin restores normal authentication; toggling only this option preserves the menu bar process. Quitting the menu bar alone does not disable bypass.
+
 Install and update through this project's third-party CPA store source. Add the following URL under **Plugins → Settings → Additional store sources**:
 
 ```text

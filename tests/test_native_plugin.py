@@ -191,6 +191,61 @@ class NativePluginTests(unittest.TestCase):
         yaml = "\n".join(f"{key}: {value}" for key, value in settings.items())
         return self.rpc("plugin.register", {"schema_version": 1, "config_yaml": base64.b64encode(yaml.encode()).decode()})
 
+    def reconfigure(self, **settings):
+        yaml = "\n".join(f"{key}: {value}" for key, value in settings.items())
+        return self.rpc("plugin.reconfigure", {"schema_version": 1, "config_yaml": base64.b64encode(yaml.encode()).decode()})
+
+    def test_auth_bypass_defaults_off_and_metadata_exposes_boolean_switch(self):
+        self.addCleanup(self.rpc, "plugin.shutdown")
+        rc, response = self.register(dataDir=self.home)
+        self.assertEqual(rc, 0, response)
+        self.assertFalse(response["result"]["capabilities"]["frontend_auth_provider"])
+        field = next(field for field in response["result"]["metadata"]["ConfigFields"]
+                     if field["Name"] == "allowUnauthenticatedRequests")
+        self.assertEqual(field["Type"], "boolean")
+        self.assertIs(field["Default"], False)
+        self.assertEqual(self.rpc("frontend_auth.identifier")[1]["result"]["identifier"], "allow-all")
+        self.assertFalse(self.rpc("frontend_auth.authenticate")[1]["result"]["Authenticated"])
+
+    def test_auth_bypass_accepts_any_credentials_and_toggles_without_restarting_helper(self):
+        self.addCleanup(self.rpc, "plugin.shutdown")
+        self.assertEqual(self.register(dataDir=self.home)[0], 0)
+        starts = self.home / "helper-starts"
+        self.assertTrue(self.wait_until(starts.exists))
+        original_starts = starts.read_text()
+        rc, response = self.reconfigure(dataDir=self.home, allowUnauthenticatedRequests="true # local use")
+        self.assertEqual(rc, 0, response)
+        self.assertTrue(response["result"]["capabilities"]["frontend_auth_provider"])
+        self.assertTrue(response["result"]["capabilities"]["usage_plugin"])
+        for headers in ({}, {"Authorization": ["Bearer invalid-token"]}, {"X-Api-Key": ["wrong-key"]}):
+            rc, response = self.rpc("frontend_auth.authenticate", {"Method": "GET", "Path": "/v1/models", "Headers": headers})
+            self.assertEqual(rc, 0, response)
+            self.assertIs(response["result"]["Authenticated"], True)
+            self.assertEqual(response["result"]["Principal"], "codex-quota-menubar:allow-all")
+        self.rpc("usage.handle", {"record": {"generate": True}})
+        self.assertTrue(self.wait_until(lambda: (self.home / "usage-events").exists()))
+        self.assertEqual(starts.read_text(), original_starts)
+        for settings in ({"allowUnauthenticatedRequests": "false"}, {}):
+            self.assertEqual(self.reconfigure(dataDir=self.home, allowUnauthenticatedRequests="true")[0], 0)
+            rc, response = self.reconfigure(dataDir=self.home, **settings)
+            self.assertEqual(rc, 0, response)
+            self.assertFalse(response["result"]["capabilities"]["frontend_auth_provider"])
+            self.assertFalse(self.rpc("frontend_auth.authenticate")[1]["result"]["Authenticated"])
+        self.assertEqual(starts.read_text(), original_starts)
+
+    def test_auth_bypass_stops_on_quiesce_shutdown_or_invalid_configuration(self):
+        self.addCleanup(self.rpc, "plugin.shutdown")
+        for method in ("plugin.quiesce", "plugin.shutdown"):
+            self.assertEqual(self.register(dataDir=self.home, allowUnauthenticatedRequests="true")[0], 0)
+            self.assertEqual(self.rpc(method)[0], 0)
+            self.assertFalse(self.rpc("frontend_auth.authenticate")[1]["result"]["Authenticated"])
+        for invalid in ("yes", "1", "null", '"true"', "'false'", "", "true\nallowUnauthenticatedRequests: false"):
+            self.assertEqual(self.register(dataDir=self.home, allowUnauthenticatedRequests="true")[0], 0)
+            rc, response = self.reconfigure(dataDir=self.home, allowUnauthenticatedRequests=invalid)
+            self.assertNotEqual(rc, 0, response)
+            self.assertIn("allowUnauthenticatedRequests", response["error"]["message"])
+            self.assertFalse(self.rpc("frontend_auth.authenticate")[1]["result"]["Authenticated"])
+
     def wait_until(self, predicate, timeout=6):
         deadline = time.time() + timeout
         while time.time() < deadline:

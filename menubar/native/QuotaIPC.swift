@@ -3,7 +3,7 @@ import Darwin
 import CryptoKit
 
 let nativeProtocolVersion = 2
-let nativeHelperFallbackVersion = "0.5.0"
+let nativeHelperFallbackVersion = "0.6.0"
 
 func nativeHelperVersion(bundle: Bundle = .main) -> String {
     bundle.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? nativeHelperFallbackVersion
@@ -210,7 +210,18 @@ func nativeIPCSelfTest(check: (Bool) -> Void) throws {
     do { try unsafe.start(); check(false) } catch { check(true) }
     check(try String(contentsOf: endpoint, encoding: .utf8) == "fixture")
     check(String(data: nativeIPCReply(managed: true, version: "0.5.0"), encoding: .utf8) == "Q2M:0.5.0\n")
-    check(nativeProtocolVersion == 2 && nativeHelperVersion() == "0.5.0")
+    check(nativeProtocolVersion == 2)
+    for (name, version) in [("versioned", "1.2.3"), ("unversioned", nil)] as [(String, String?)] {
+        let bundleURL = root.appendingPathComponent("\(name).bundle")
+        let contents = bundleURL.appendingPathComponent("Contents")
+        try FileManager.default.createDirectory(at: contents, withIntermediateDirectories: true)
+        var info = ["CFBundleIdentifier": "test.codex.quota.\(name)", "CFBundlePackageType": "BNDL"]
+        info["CFBundleShortVersionString"] = version
+        try PropertyListSerialization.data(fromPropertyList: info, format: .xml, options: 0)
+            .write(to: contents.appendingPathComponent("Info.plist"))
+        guard let bundle = Bundle(url: bundleURL) else { check(false); continue }
+        check(nativeHelperVersion(bundle: bundle) == (version ?? nativeHelperFallbackVersion))
+    }
     check(nativeEventDescriptor(arguments: ["helper", "--event-fd", "198"]) == 198)
     check(nativeEventDescriptor(arguments: ["helper", "--event-fd=198"]) == 198)
     check(nativeEventDescriptor(arguments: ["helper", "--event-fd198"]) == 198)

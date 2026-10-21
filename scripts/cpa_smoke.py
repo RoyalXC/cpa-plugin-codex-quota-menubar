@@ -14,6 +14,7 @@ import threading
 import time
 import urllib.parse
 import urllib.request
+import urllib.error
 
 ROOT = Path(__file__).resolve().parents[1]
 PLUGIN = 'codex-quota-menubar'
@@ -51,6 +52,7 @@ def smoke(core, artifact=None, registry_url=None, cpa_home=None):
         home = Path(directory).resolve()
         port = free_port()
         secret = secrets.token_urlsafe(32)
+        client_key = secrets.token_urlsafe(32)
         plugin_home = home / 'widget'
         fake_cpa = home / 'cpa'
         (fake_cpa / 'oauth').mkdir(parents=True)
@@ -90,6 +92,7 @@ def smoke(core, artifact=None, registry_url=None, cpa_home=None):
         # JSON is valid YAML; this file contains only an ephemeral test key.
         config.write_text(json.dumps({
             'host': '127.0.0.1', 'port': port, 'auth-dir': str(fake_cpa / 'oauth'),
+            'api-keys': [client_key],
             'remote-management': {'secret-key': secret, 'allow-remote': False, 'disable-control-panel': True},
             'plugins': {'enabled': True, 'dir': str(plugin_dir), 'store-sources': [registry_url],
                         'store-auth': ([{'match': f'http://127.0.0.1:{server.server_port}/',
@@ -110,6 +113,17 @@ def smoke(core, artifact=None, registry_url=None, cpa_home=None):
                 return json.load(response)
         def status():
             return json.loads((plugin_home / 'run/menubar/status.json').read_text())
+        def request_status(route, credential=None):
+            headers = {'Authorization': 'Bearer ' + credential} if credential else {}
+            request = urllib.request.Request(f'http://127.0.0.1:{port}/{route}', headers=headers)
+            try:
+                with opener.open(request, timeout=5) as response:
+                    return response.status
+            except urllib.error.HTTPError as error:
+                error.close()
+                return error.code
+        def models_status(credential=None):
+            return request_status('v1/models', credential)
         try:
             wait_for(lambda: management('plugins').get('plugins_enabled'))
             store = management('plugin-store')
@@ -126,14 +140,32 @@ def smoke(core, artifact=None, registry_url=None, cpa_home=None):
             assert state.get('launchMode') == 'cpa-managed', 'Helper did not use ownership lifecycle'
             first_pid = state['pid']
             assert helper_process(first_pid, plugin_home), 'Unexpected helper process'
+            assert models_status() == 401, 'Default configuration accepted an anonymous proxy request'
+            assert models_status('invalid-test-token') == 401, 'Default configuration accepted an invalid token'
+            assert models_status(client_key) == 200, 'Native CPA API key authentication failed'
+            management('plugins/' + PLUGIN + '/config', 'PATCH', {'allowUnauthenticatedRequests': True})
+            wait_for(lambda: models_status() == 200)
+            assert models_status('invalid-test-token') == 200, 'Bypass still required valid credentials'
+            assert request_status('v0/management/plugins') in (401, 403), 'Bypass affected management authentication'
+            assert status()['pid'] == first_pid, 'Auth-only configuration restarted the quota helper'
+            management('plugins/' + PLUGIN + '/config', 'PATCH', {'allowUnauthenticatedRequests': False})
+            wait_for(lambda: models_status('invalid-test-token') == 401)
+            assert models_status() == 401, 'Turning bypass off still allowed anonymous access'
+            assert models_status(client_key) == 200, 'Turning bypass off broke native CPA API key authentication'
+            management('plugins/' + PLUGIN + '/config', 'PATCH', {'allowUnauthenticatedRequests': True})
+            wait_for(lambda: models_status() == 200)
             management('plugins/' + PLUGIN + '/enabled', 'PATCH', {'enabled': False})
             wait_for(lambda: not helper_process(first_pid, plugin_home))
+            wait_for(lambda: models_status() == 401)
             management('plugins/' + PLUGIN + '/enabled', 'PATCH', {'enabled': True})
+            wait_for(lambda: models_status() == 200)
             resumed = wait_for(lambda: status() if status().get('pid') != first_pid else None)
             assert resumed['visible'] and resumed['helperVersion'] == version
             wait_for(lambda: status().get('quotaAvailable'), timeout=30) if cpa_home else None
             resumed = status()
             result = {'storeInstall': True, 'registered': True, 'statusItemVisible': True,
+                      'authBypass': True, 'authBypassToggle': True, 'authBypassDisableEnable': True,
+                      'managementAuthPreserved': True,
                       'disableEnable': True, 'helperVersion': version, 'protocolVersion': 2,
                       'quotaAvailable': resumed.get('quotaAvailable', False),
                       'source': 'public-registry' if not server else 'local-fixture',

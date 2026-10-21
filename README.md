@@ -51,6 +51,20 @@ Defaults work with the standard CPA macOS installation. The plugin configuration
 | `authDir` | Optional explicit OAuth directory; otherwise determined from CPA configuration |
 | `managementPort` | `8317`; local CPA lifecycle checks |
 | `dataDir` | `~/Library/Application Support/CodexQuotaMenubar`; private widget settings, state, and deployed versions |
+| `allowUnauthenticatedRequests` | `false`; when `true`, accept all proxy API requests without checking credentials, including requests with no token or an invalid token. Intended for a local-only CPA instance. |
+
+Starting with 0.6.0, the plugin can also provide optional proxy API authentication bypass. In CPA's plugin configuration, set `allowUnauthenticatedRequests` to `true` to enable it, or `false` to restore normal CPA authentication. The field is a boolean and defaults to `false` when omitted. For YAML configuration, merge this field into the existing plugin entry:
+
+```yaml
+plugins:
+  enabled: true
+  configs:
+    codex-quota-menubar:
+      enabled: true
+      allowUnauthenticatedRequests: true
+```
+
+This accepts requests from Codex's built-in `openai` provider using its existing OAuth token, without reading or validating the token. It applies to all proxy models and clients, not just Codex. Management API authentication remains separate. Use a CPA listener bound to `127.0.0.1` for this local-only mode. The option does not change upstream credentials, account routing, or quota selection. Changing only this option does not restart the menu bar helper; disabling the plugin removes its bypass, and quitting only the menu bar does not turn bypass off.
 
 Paths are resolved on the user's Mac, not embedded from the build machine. The helper is deployed under a version and payload hash directory. Settings are separate, so reinstalling a version does not erase account selection. A bounded local socket handshake verifies the helper version and readiness before the plugin reports a successful registration.
 
@@ -75,10 +89,10 @@ To exercise the **real CPA store downloader, checksum verification, installation
 ```bash
 python3 scripts/cpa_smoke.py \
   --core /path/to/cli-proxy-api \
-  --artifact dist/codex-quota-menubar_0.5.0_darwin_arm64.zip
+  --artifact dist/codex-quota-menubar_0.6.0_darwin_arm64.zip
 ```
 
-This test creates its own core configuration and authentication directory and does not modify an existing CPA installation. Passing `--cpa-home /path/to/CPA-data` optionally permits the helper to read an existing account directory for a real quota check; credentials are never copied or modified.
+This test creates its own core configuration and authentication directory and does not modify an existing CPA installation. It verifies default API key enforcement, anonymous and invalid-token bypass, runtime toggling, management API protection, and plugin disable/re-enable. Passing `--cpa-home /path/to/CPA-data` optionally permits the helper to read an existing account directory for a real quota check; credentials are never copied or modified.
 
 For a signed and notarized payload:
 
@@ -91,6 +105,8 @@ python3 scripts/build_release.py --arch arm64 \
 The helper is signed and optionally notarized/stapled **before** embedding; it is not modified after deployment. The outer plugin is then signed. Verify the resulting build in the actual CPA release used for distribution.
 
 ## Validation
+
+For 0.6.0, local validation on macOS 27 passed 33 Python tests and 229 native helper self-test checks for each architecture (Intel under Rosetta). Both packages passed isolated CLIProxyAPI 8.0.27 store installation, default API key enforcement, bypass toggling, management API protection, plugin disable/re-enable, and helper lifecycle checks. The arm64 package also passed the same checks with CLIProxyAPI 8.0.37. These checks used empty fixture account directories and did not exercise real upstream model requests or real-account quota retrieval.
 
 On October 13, 2026, the [v0.5.0 release CI](https://github.com/RoyalXC/cpa-plugin-codex-quota-menubar/actions/runs/38375323674) passed on native macOS 15 Apple Silicon and Intel runners using SDK 15.5: 25 Python tests, 227 native helper self-test checks per architecture, package validation, and real CLIProxyAPI 8.0.27 store/lifecycle checks with an isolated fixture registry. The [source-publication CI](https://github.com/RoyalXC/cpa-plugin-codex-quota-menubar/actions/runs/38377559307) repeated both architecture builds with 30 Python tests, including source-update and downgrade-protection checks.
 
