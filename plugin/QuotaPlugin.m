@@ -516,7 +516,9 @@ static BOOL applyConfiguration(uint8_t *request, size_t length) {
     if (![body isKindOfClass:[NSDictionary class]]) { lastError = @"Lifecycle request must be a JSON object"; return NO; }
     if (body[@"schema_version"]) {
         NSInteger schemaVersion = [body[@"schema_version"] integerValue];
-        if (schemaVersion < 1 || schemaVersion > 6) { lastError = @"Unsupported lifecycle schema_version (supported versions: 1 through 6)"; return NO; }
+        // Schemas 7–10 add interceptor, model-registration and upstream-auth
+        // features. Our usage/frontend-auth contracts remain schema 1.
+        if (schemaVersion < 1 || schemaVersion > 10) { lastError = @"Unsupported lifecycle schema_version (supported versions: 1 through 10)"; return NO; }
     }
     NSData *yaml = nil; id encoded = body[@"config_yaml"];
     if (encoded && ![encoded isKindOfClass:[NSString class]]) { lastError = @"config_yaml must be base64 text"; return NO; }

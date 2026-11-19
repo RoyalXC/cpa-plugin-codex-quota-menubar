@@ -3,7 +3,7 @@ import Darwin
 import CryptoKit
 
 let nativeProtocolVersion = 2
-let nativeHelperFallbackVersion = "0.6.0"
+let nativeHelperFallbackVersion = "0.6.3"
 
 func nativeHelperVersion(bundle: Bundle = .main) -> String {
     bundle.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? nativeHelperFallbackVersion

@@ -233,6 +233,30 @@ class NativePluginTests(unittest.TestCase):
             self.assertFalse(self.rpc("frontend_auth.authenticate")[1]["result"]["Authenticated"])
         self.assertEqual(starts.read_text(), original_starts)
 
+    def test_supported_lifecycle_schemas_register_reconfigure_and_usage(self):
+        self.addCleanup(self.rpc, "plugin.shutdown")
+        for schema in range(1, 11):
+            with self.subTest(schema=schema):
+                config = {"schema_version": schema, "config_yaml": base64.b64encode(
+                    f"dataDir: {self.home}\nallowUnauthenticatedRequests: true".encode()).decode()}
+                rc, response = self.rpc("plugin.register", config)
+                self.assertEqual(rc, 0, response)
+                self.assertEqual(response["result"]["schema_version"], 1)
+                self.assertTrue(response["result"]["capabilities"]["usage_plugin"])
+                self.assertTrue(response["result"]["capabilities"]["frontend_auth_provider"])
+                self.assertTrue(self.rpc("frontend_auth.authenticate")[1]["result"]["Authenticated"])
+                starts = (self.home / "helper-starts").read_text()
+                events = self.home / "usage-events"
+                previous = events.stat().st_size if events.exists() else 0
+                self.assertEqual(self.rpc("usage.handle", {"record": {"generate": True}})[0], 0)
+                self.assertTrue(self.wait_until(lambda: events.exists() and events.stat().st_size > previous))
+                config["config_yaml"] = base64.b64encode(f"dataDir: {self.home}".encode()).decode()
+                rc, response = self.rpc("plugin.reconfigure", config)
+                self.assertEqual(rc, 0, response)
+                self.assertFalse(response["result"]["capabilities"]["frontend_auth_provider"])
+                self.assertFalse(self.rpc("frontend_auth.authenticate")[1]["result"]["Authenticated"])
+                self.assertEqual((self.home / "helper-starts").read_text(), starts)
+
     def test_auth_bypass_stops_on_quiesce_shutdown_or_invalid_configuration(self):
         self.addCleanup(self.rpc, "plugin.shutdown")
         for method in ("plugin.quiesce", "plugin.shutdown"):
@@ -435,7 +459,7 @@ store:
         rc, response = self.register(dataDir=link)
         self.assertNotEqual(rc, 0)
         self.assertIn("error", response)
-        rc, response = self.rpc("plugin.register", {"schema_version": 7})
+        rc, response = self.rpc("plugin.register", {"schema_version": 11})
         self.assertNotEqual(rc, 0)
         self.assertIn("schema_version", response["error"]["message"])
         unknown_yaml = base64.b64encode(b"enabled: true\nfuturePluginOption: true\n").decode()

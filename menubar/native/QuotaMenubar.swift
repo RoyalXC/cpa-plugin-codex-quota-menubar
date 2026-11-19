@@ -588,6 +588,12 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSPopoverDelegate {
     var closingAnimated = true
     var relativeTimeTimer: Timer?
     var statusAppearanceObservation: NSKeyValueObservation?
+    private struct StatusImageState: Equatable {
+        let title: String
+        let percentage: Double?
+        let dark: Bool
+    }
+    private var statusImageState: StatusImageState?
 
     override init() {
         super.init()
@@ -841,17 +847,26 @@ final class QuotaApp: NSObject, NSApplicationDelegate, NSPopoverDelegate {
 
     func updateStatusButton() {
         guard let button = statusItem?.button else { return }
-        button.title = ""
-        button.image = quotaCapsuleImage(title: snapshot?.statusTitle ?? "--%",
+        let imageState = StatusImageState(title: snapshot?.statusTitle ?? "--%",
             percentage: snapshot?.stale == true ? nil : snapshot?.primaryWindow?.remainingPercentage,
             dark: button.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua)
+        // AppKit can notify effectiveAppearance again while rendering a status
+        // item. Reassigning an unchanged image would keep that redraw loop alive.
+        if statusImageState != imageState {
+            statusImageState = imageState
+            if !button.title.isEmpty { button.title = "" }
+            button.image = quotaCapsuleImage(title: imageState.title,
+                percentage: imageState.percentage, dark: imageState.dark)
+        }
+        let tooltip: String
         if let snapshot = snapshot {
             let quota = snapshot.primaryWindow?.label ?? "额度"
             let state = snapshot.stale ? "缓存已过期" : (snapshot.sourceLabel ?? "来源未知")
-            statusItem?.button?.toolTip = "Codex · \(quota)剩余 \(snapshot.statusTitle) · \(state)"
+            tooltip = "Codex · \(quota)剩余 \(snapshot.statusTitle) · \(state)"
         } else {
-            statusItem?.button?.toolTip = failure == nil ? "Codex 账号额度 · 正在读取" : "Codex 额度服务不可用"
+            tooltip = failure == nil ? "Codex 账号额度 · 正在读取" : "Codex 额度服务不可用"
         }
+        if button.toolTip != tooltip { button.toolTip = tooltip }
     }
 
     func updateView(force: Bool = false) {
@@ -1025,6 +1040,63 @@ func nativeStatusContextMenuSelfTest(check: (Bool) -> Void) {
     }
 }
 
+func nativeStatusImageSelfTest(check: (Bool) -> Void) throws {
+    let app = QuotaApp()
+    let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+    defer { NSStatusBar.system.removeStatusItem(item) }
+    app.statusItem = item
+    guard let button = item.button else { check(false); return }
+    button.appearance = NSAppearance(named: .aqua)
+    let snapshot = try JSONDecoder().decode(QuotaSnapshot.self, from: previewFixture)
+    app.snapshot = snapshot
+    app.updateStatusButton()
+    let initialImage = button.image
+    check(initialImage != nil && button.title.isEmpty)
+    for _ in 0..<100 {
+        button.appearance = NSAppearance(named: .aqua)
+        app.updateStatusButton()
+    }
+    check(button.image === initialImage)
+
+    app.snapshot = QuotaSnapshot(resolution: snapshot.resolution, sourceLabel: "Changed source",
+        observedAt: snapshot.observedAt, error: snapshot.error, accounts: snapshot.accounts)
+    app.updateStatusButton()
+    check(button.image === initialImage)
+    check(button.toolTip?.contains("Changed source") == true)
+
+    button.appearance = NSAppearance(named: .darkAqua)
+    app.updateStatusButton()
+    let darkImage = button.image
+    check(darkImage != nil && darkImage !== initialImage)
+    app.updateStatusButton()
+    check(button.image === darkImage)
+
+    let fractional = Data(String(decoding: previewFixture, as: UTF8.self)
+        .replacingOccurrences(of: "\"used_percent\":47", with: "\"used_percent\":47.1").utf8)
+    app.snapshot = try JSONDecoder().decode(QuotaSnapshot.self, from: fractional)
+    check(app.snapshot?.statusTitle == snapshot.statusTitle)
+    app.updateStatusButton()
+    let fractionalImage = button.image
+    check(fractionalImage != nil && fractionalImage !== darkImage)
+
+    app.snapshot = staleSnapshot(snapshot)
+    app.updateStatusButton()
+    let staleImage = button.image
+    check(staleImage != nil && staleImage !== fractionalImage)
+    check(button.toolTip?.contains("缓存已过期") == true)
+    app.updateStatusButton()
+    check(button.image === staleImage)
+
+    app.snapshot = nil
+    app.updateStatusButton()
+    let unknownImage = button.image
+    check(unknownImage != nil && unknownImage !== staleImage)
+    app.failure = "unavailable"
+    app.updateStatusButton()
+    check(button.image === unknownImage)
+    check(button.toolTip == "Codex 额度服务不可用")
+}
+
 func selfTest() throws {
     var checks = 0
     func check(_ condition: Bool) {
@@ -1178,6 +1250,7 @@ func selfTest() throws {
     check(unresolved.statusTitle == "--%")
     nativePopoverSelfTest(check: check)
     nativeStatusContextMenuSelfTest(check: check)
+    try nativeStatusImageSelfTest(check: check)
     try nativeSelfTest(check: check)
     try nativeIPCSelfTest(check: check)
     print("{\"ok\":true,\"checks\":\(checks)}")

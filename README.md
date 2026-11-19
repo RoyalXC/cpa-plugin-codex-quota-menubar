@@ -89,7 +89,7 @@ To exercise the **real CPA store downloader, checksum verification, installation
 ```bash
 python3 scripts/cpa_smoke.py \
   --core /path/to/cli-proxy-api \
-  --artifact dist/codex-quota-menubar_0.6.0_darwin_arm64.zip
+  --artifact dist/codex-quota-menubar_0.6.3_darwin_arm64.zip
 ```
 
 This test creates its own core configuration and authentication directory and does not modify an existing CPA installation. It verifies default API key enforcement, anonymous and invalid-token bypass, runtime toggling, management API protection, and plugin disable/re-enable. Passing `--cpa-home /path/to/CPA-data` optionally permits the helper to read an existing account directory for a real quota check; credentials are never copied or modified.
@@ -105,6 +105,12 @@ python3 scripts/build_release.py --arch arm64 \
 The helper is signed and optionally notarized/stapled **before** embedding; it is not modified after deployment. The outer plugin is then signed. Verify the resulting build in the actual CPA release used for distribution.
 
 ## Validation
+
+For 0.6.3, local validation on November 19, 2026 passed 34 Python tests, both architecture package checks, and 243 native helper self-test checks per architecture (Intel under Rosetta). The new checks verify image reuse after repeated same-theme updates and source-only changes, plus redraws for theme, fractional quota and stale-state changes. The arm64 package passed isolated store/lifecycle/authentication checks and was hot-installed without restarting the existing CPA core. Real quota retrieval and unchanged settings were verified. A 10-second CPU-time measurement fell from 85.9% before the fix to 0.4%, 0.3% and 0.6% in three consecutive 10-second windows afterward; live process sampling showed the main thread waiting instead of continuously redrawing the status item. These CPU measurements cover three post-upgrade intervals.
+
+For 0.6.2, local validation on November 2, 2026 passed 34 Python tests (including lifecycle schemas 1–10), both architecture package checks, and 229 native helper self-test checks per architecture (Intel under Rosetta). The arm64 package passed isolated store/lifecycle/authentication checks on CLIProxyAPI 8.0.51 (schema 10), then was hot-installed into the existing CPA instance without restarting its core. Registration, effective enablement, status-item readiness, a fresh real-account quota result, unchanged settings, the existing authentication bypass option, and management API authentication were verified. Packages are local builds and have not been published.
+
+For 0.6.1, local validation on October 27, 2026 passed 34 Python tests, both architecture package checks, and 229 native helper self-test checks per architecture (Intel under Rosetta). Both packages passed isolated CLIProxyAPI 8.0.27 store/lifecycle/authentication checks; arm64 also passed those checks on 8.0.44 with lifecycle schema 7. The existing CPA 0.3.53 / core 8.0.44 installation was hot-upgraded to the local arm64 build without restarting the core. Registration, status-item readiness, a successful real-account quota fetch, configured proxy authentication bypass, and continued management API authentication were verified. This local validation does not establish publication of the packages.
 
 For 0.6.0, local validation on macOS 27 passed 33 Python tests and 229 native helper self-test checks for each architecture (Intel under Rosetta). Both packages passed isolated CLIProxyAPI 8.0.27 store installation, default API key enforcement, bypass toggling, management API protection, plugin disable/re-enable, and helper lifecycle checks. The arm64 package also passed the same checks with CLIProxyAPI 8.0.37. These checks used empty fixture account directories and did not exercise real upstream model requests or real-account quota retrieval.
 

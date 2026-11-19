@@ -1,5 +1,11 @@
 Codex Quota Menubar is a native macOS menu bar plugin for CPA.
 
+0.6.3 fixes sustained high CPU from repeated status-item appearance notifications. The menu bar image is replaced only when its displayed quota, stale state or light/dark theme changes. Tooltip updates remain independent, so account/source changes still appear without redrawing an identical image.
+
+0.6.2 restores plugin activation with CLIProxyAPI 8.0.51 by accepting lifecycle schemas 8–10. These add interceptor patches, multi-provider model registration and upstream-auth metadata without changing this plugin's schema-1 usage or frontend-auth contracts. Schemas 1–7 remain supported; unverified future schemas are still rejected.
+
+0.6.1 restores plugin activation with CLIProxyAPI 8.0.44 by accepting lifecycle schema 7. Schema 7 adds optional request-interceptor flags and does not change this plugin's usage or frontend-auth contracts. Older schemas 1–6 remain supported.
+
 0.6.0 adds `allowUnauthenticatedRequests` (boolean, default `false`). Enable it in plugin configuration to accept all proxy API requests without checking credentials, including Codex OAuth tokens, for a CPA instance bound to localhost. Management API authentication remains separate. Turning the option off or disabling the plugin restores normal authentication; toggling only this option preserves the menu bar process. Quitting the menu bar alone does not disable bypass.
 
 Install and update through this project's third-party CPA store source. Add the following URL under **Plugins → Settings → Additional store sources**:
