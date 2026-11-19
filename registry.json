@@ -16,27 +16,49 @@
         "macOS",
         "Menu Bar"
       ],
-      "version": "0.6.0",
+      "version": "0.6.3",
       "install": {
         "type": "direct",
         "artifacts": [
           {
             "goos": "darwin",
             "goarch": "arm64",
-            "url": "https://github.com/RoyalXC/cpa-plugin-codex-quota-menubar/releases/download/v0.6.0/codex-quota-menubar_0.6.0_darwin_arm64.zip",
-            "sha256": "3669ff1b4f1e16de762fffe5b3a78c861f2e5183a6d9202ad68cc5d20eeddbed",
-            "size": 2000213
+            "url": "https://github.com/RoyalXC/cpa-plugin-codex-quota-menubar/releases/download/v0.6.3/codex-quota-menubar_0.6.3_darwin_arm64.zip",
+            "sha256": "68f6f95639375f1dde0629dd44c63f48e608ffe85bccd63c0d637b2e148b2daa",
+            "size": 1985682
           },
           {
             "goos": "darwin",
             "goarch": "amd64",
-            "url": "https://github.com/RoyalXC/cpa-plugin-codex-quota-menubar/releases/download/v0.6.0/codex-quota-menubar_0.6.0_darwin_amd64.zip",
-            "sha256": "3be5dcf0f2f8733f0e2c2b90458c58748f84117e3475fbd5705bb831b59f6312",
-            "size": 2017995
+            "url": "https://github.com/RoyalXC/cpa-plugin-codex-quota-menubar/releases/download/v0.6.3/codex-quota-menubar_0.6.3_darwin_amd64.zip",
+            "sha256": "856fe511bda717f12f34eb3fc82517cdb90c81d64d40ec26838a528dde16bc60",
+            "size": 2019267
           }
         ]
       },
       "versions": [
+        {
+          "version": "0.6.3",
+          "install": {
+            "type": "direct",
+            "artifacts": [
+              {
+                "goos": "darwin",
+                "goarch": "arm64",
+                "url": "https://github.com/RoyalXC/cpa-plugin-codex-quota-menubar/releases/download/v0.6.3/codex-quota-menubar_0.6.3_darwin_arm64.zip",
+                "sha256": "68f6f95639375f1dde0629dd44c63f48e608ffe85bccd63c0d637b2e148b2daa",
+                "size": 1985682
+              },
+              {
+                "goos": "darwin",
+                "goarch": "amd64",
+                "url": "https://github.com/RoyalXC/cpa-plugin-codex-quota-menubar/releases/download/v0.6.3/codex-quota-menubar_0.6.3_darwin_amd64.zip",
+                "sha256": "856fe511bda717f12f34eb3fc82517cdb90c81d64d40ec26838a528dde16bc60",
+                "size": 2019267
+              }
+            ]
+          }
+        },
         {
           "version": "0.6.0",
           "install": {
