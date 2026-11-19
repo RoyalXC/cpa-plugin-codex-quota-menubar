@@ -105,11 +105,11 @@ def smoke(core, artifact=None, registry_url=None, cpa_home=None):
         log = (home / 'core.log').open('wb')
         process = subprocess.Popen([str(Path(core).resolve()), '-config', str(config)], stdout=log, stderr=log)
         opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
-        def management(route, method='GET', body=None):
+        def management(route, method='GET', body=None, timeout=20):
             request = urllib.request.Request(f'http://127.0.0.1:{port}/v0/management/{route}',
                 data=json.dumps(body).encode() if body is not None else None, method=method,
                 headers={'Authorization': 'Bearer ' + secret, 'Content-Type': 'application/json'})
-            with opener.open(request, timeout=20) as response:
+            with opener.open(request, timeout=timeout) as response:
                 return json.load(response)
         def status():
             return json.loads((plugin_home / 'run/menubar/status.json').read_text())
@@ -131,7 +131,9 @@ def smoke(core, artifact=None, registry_url=None, cpa_home=None):
             if source is None:
                 raise RuntimeError('Test registry did not expose the plugin: ' + json.dumps(store.get('source_errors', [])))
             source_id = source['source_id']
-            installed = management('plugin-store/' + PLUGIN + '/install?source=' + source_id, 'POST', {})
+            # Public release downloads can take longer than local management calls.
+            installed = management('plugin-store/' + PLUGIN + '/install?source=' + source_id,
+                                   'POST', {}, timeout=120)
             entry = wait_for(lambda: next((item for item in management('plugins')['plugins']
                 if item['id'] == PLUGIN and item.get('registered') and item.get('effective_enabled')), None))
             state = wait_for(lambda: status() if status().get('visible') else None)
